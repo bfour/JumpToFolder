@@ -16,6 +16,9 @@ v 1.0.8
 - Added routine to select the file in file managers
 - BugFix: could be waiting on clipboard change indefinitely under certain conditions 
 - Improved timing
+- BugFix: with Everything 1.5 a trailing backslash was kept in the found path,
+  resulting in a double backslash (e.g. C:\folder\\) that broke navigation
+  in Explorer and other file managers.
 
 
 
@@ -285,8 +288,10 @@ Loop	; Start of WinWaitActive/WinWaitNotActive loop.
 			DebugMsg( A_ThisLabel . A_ThisFunc, "Valid Path: [" . $FoundPath . "]" )
 			PathSplit($FoundPath, $FolderPath, $FileName)
 			
-		; Add a backslash th FolderPath
-			$FolderPath := $FolderPath . "\"
+		; Add a backslash to FolderPath (unless it already ends with one,
+		; e.g. a root path like "C:\")
+			If ( SubStr($FolderPath, StrLen($FolderPath)) != "\" )
+				$FolderPath := $FolderPath . "\"
 
 			DebugMsg( A_ThisLabel . A_ThisFunc, "$FolderPath = [" .  $FolderPath .  "]`r`n$FileName = [" . $FileName . "]")
 
@@ -353,6 +358,12 @@ MsgBox We never get here (and that's how it should be)
 	{
 		MsgBox Somehow this is not really Everything 1.4 or 1.5. Check your settings.
 	}
+
+;	Everything 1.5 returns folders with a trailing backslash, 1.4 does not.
+;	Normalize here, so all callers get the same format.
+	_FoundPath := NormalizePath(_FoundPath)
+
+	DebugMsg( A_ThisLabel . A_ThisFunc, "Normalized path = [" . _FoundPath . "]" )
 
 	Return _FoundPath
 }
@@ -605,6 +616,34 @@ Return _thisID
 	
 ;_____________________________________________________________________________
 ;
+						NormalizePath(_thisPath)
+;_____________________________________________________________________________
+;
+;	Strips surrounding quotes/spaces and a trailing backslash.
+;	A root path ("C:\" or "\\server\share\") keeps its backslash,
+;	because that one is part of the path.
+{
+;	Strip double-quotes and spaces
+	_thisPath := Trim( _thisPath, " """"" )
+
+	If ( _thisPath = "" )
+		Return _thisPath
+
+;	Drive root: "C:\" -> keep as-is
+	If ( StrLen(_thisPath) = 3 AND SubStr(_thisPath, 2, 1) = ":" AND SubStr(_thisPath, 3, 1) = "\" )
+		Return _thisPath
+
+;	UNC share root: "\\server\share\" -> keep as-is
+	If ( SubStr(_thisPath, 1, 2) = "\\" AND StrSplit(RTrim(_thisPath, "\"), "\").MaxIndex() <= 4 )
+		Return _thisPath
+
+	Return RTrim( _thisPath, "\" )
+}
+
+
+
+;_____________________________________________________________________________
+;
 						PathSplit(_thisPath, ByRef $FolderPath, ByRef $FileName)
 ;_____________________________________________________________________________
 ;
@@ -673,12 +712,7 @@ Return
 
 
 		$FoundPath := GetPathFromEverything($EverythingID)
-
-	;	Strip double-quotes and spaces
-		$FoundPath := Trim( $FoundPath, " """"" )
-		
-	;	Trim trailing backslash?
-		$FoundPath := RTrim( $FoundPath, "\" )
+	;	(quotes and trailing backslash are already stripped in GetPathFromEverything)
 	
 		DebugMsg( A_ThisLabel . A_ThisFunc, "Found :`r`n[" . $FoundPath . "]" )
 
