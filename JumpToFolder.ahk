@@ -1,6 +1,6 @@
-﻿$ThisVersion := "1.0.8"
+﻿$ThisVersion := "1.0.9"
 
-;@Ahk2Exe-SetVersion 1.0.8
+;@Ahk2Exe-SetVersion 1.0.9
 ;@Ahk2Exe-SetName JumpToFolder
 ;@Ahk2Exe-SetDescription Change active folder using Everything.
 ;@Ahk2Exe-SetCopyright NotNull
@@ -11,11 +11,7 @@ Info	: https://www.voidtools.com/forum/viewtopic.php?f=2&t=11194
 
 
 
-v 1.0.8
-- Added support for Directory Opus
-- Added routine to select the file in file managers
-- BugFix: could be waiting on clipboard change indefinitely under certain conditions 
-- Improved timing
+v 1.0.9
 - BugFix: with Everything 1.5 a trailing backslash was kept in the found path,
   resulting in a double backslash (e.g. C:\folder\\) that broke navigation
   in Explorer and other file managers.
@@ -2208,6 +2204,13 @@ V SingleInstance Force closes an already running JumpToFolder.exe,
 - Advanced Tab for extra settings? Or keep those ini-only?
 
 ---------------------------------------
+
+
+v 1.0.8
+- Added support for Directory Opus
+- Added routine to select the file in file managers
+- BugFix: could be waiting on clipboard change indefinitely under certain conditions 
+- Improved timing
 
 
 v 1.0.6
