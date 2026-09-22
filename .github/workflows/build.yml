@@ -3,7 +3,14 @@ name: Compile AHK Script
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch: # Allows you to trigger the run manually from the Actions tab
+
+env:
+  # JumpToFolder.ahk is an AutoHotkey v1.1 script, so it needs the v1 compiler
+  # and the v1 base file. Pinned so a new AutoHotkey release cannot break the build.
+  AHK_VERSION: 1.1.37.02
 
 jobs:
   build:
@@ -13,11 +20,38 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Fetch AutoHotkey v1 compiler and base files
+      shell: pwsh
+      run: |
+        New-Item -Type Directory -Force _ahktmp | Out-Null
+        $url = "https://github.com/AutoHotkey/AutoHotkey/releases/download/v${env:AHK_VERSION}/AutoHotkey_${env:AHK_VERSION}.zip"
+        Write-Output "Downloading $url"
+        curl.exe -fLo _ahktmp/ahk.zip $url
+        Expand-Archive -Path _ahktmp/ahk.zip -DestinationPath _ahktmp -Force
+        # Sanity check: the action below fails with a bare "not found" otherwise.
+        foreach ($f in "_ahktmp/Compiler/Ahk2Exe.exe", "_ahktmp/Compiler/Unicode 64-bit.bin") {
+          if (-not (Test-Path $f)) { throw "$f missing from AutoHotkey_${env:AHK_VERSION}.zip" }
+        }
+
     - name: Ahk2Exe (64bit)
       uses: tamo/action-Ahk2Exe@main
       with:
-        version: v1.3.36.02       # Forces the action to download the AHK v1 compiler
-        base: Unicode 64-bit.bin  # The correct 64-bit base file name for AHK v1
+        # Both files already exist, so the action uses them instead of
+        # downloading AutoHotkey v2 (its default).
+        ahk2exe: _ahktmp/Compiler/Ahk2Exe.exe
+        base: _ahktmp/Compiler/Unicode 64-bit.bin
         src: JumpToFolder.ahk
 
-    - run: ls JumpToFolder.exe
+    - name: Verify the executable was produced
+      shell: pwsh
+      run: |
+        if (-not (Test-Path JumpToFolder.exe)) { throw "Ahk2Exe did not produce JumpToFolder.exe" }
+        Get-Item JumpToFolder.exe | Format-List Name, Length
+        (Get-Item JumpToFolder.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
+
+    - name: Upload the executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: JumpToFolder-x64
+        path: JumpToFolder.exe
+        if-no-files-found: error
