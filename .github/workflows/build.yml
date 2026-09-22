@@ -19,4 +19,4 @@ jobs:
         base: AutoHotkey64.exe
         src: JumpToFolder.ahk
 
-    - run: ls RestoreWinPos.exe
+    - run: ls JumpToFolder.exe
