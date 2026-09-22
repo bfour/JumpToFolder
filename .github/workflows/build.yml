@@ -16,7 +16,8 @@ jobs:
     - name: Ahk2Exe (64bit)
       uses: tamo/action-Ahk2Exe@main
       with:
-        base: AutoHotkey64.exe
+        version: v1.3.36.02       # Forces the action to download the AHK v1 compiler
+        base: Unicode 64-bit.bin  # The correct 64-bit base file name for AHK v1
         src: JumpToFolder.ahk
 
     - run: ls JumpToFolder.exe
